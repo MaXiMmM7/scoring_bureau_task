@@ -31,8 +31,7 @@ namespace Game{
 				if(new_size != old_size){
 					old_size = new_size;
 					if(new_size >= 0){
-						team_size_.store(new_size);
-						team_size_.notify_all();
+						team_size_.store(new_size, std::memory_order_release);
 					}
 				}
 			}catch(std::exception& ex){
@@ -60,7 +59,7 @@ namespace Game{
 				}
 			}
 
-			int team_size = team_size_.load();
+			int team_size = team_size_.load(std::memory_order_acquire);
 			if(num_ < team_size){
 				std::cout << (num_+1) << "/" << team_size << ", " << team_ << ": " << action_ << std::endl;
 				ball_.store(team_ == 1 ? 2 : 1);
@@ -86,7 +85,7 @@ namespace Game{
 	void Team::ChangePlayersNumber(int size){
 
 		int old_size = team_size_.load();
-		team_size_.store(size);
+		team_size_.store(size, std::memory_order_release);
 
 		if(size > old_size){
 			for(int i = old_size; i < size; ++i){
@@ -122,7 +121,7 @@ namespace Game{
 			Team team2(2, ball_);
 			while(!game_over_.test()){
 
-				if((size = team_size_.load()) != old_size){
+				if((size = team_size_.load(std::memory_order_acquire)) != old_size){
 					team1.ChangePlayersNumber(size);
 					team2.ChangePlayersNumber(size);
 					old_size = size;
