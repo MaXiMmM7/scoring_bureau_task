@@ -51,10 +51,10 @@ namespace Game{
 
 		while(true){
 
-			while(!((striker_.load() == num_) && (ball_.load() == team_))){
+			while(!((striker_.load(std::memory_order_acquire) == num_) && (ball_.load(std::memory_order_acquire) == team_))){
 				std::this_thread::yield();
 				if(terminated_.test()){
-					striker_.compare_exchange_strong(num_,0);
+					striker_.compare_exchange_strong(num_,0, std::memory_order_release, std::memory_order_relaxed);
 					return;
 				}
 			}
@@ -62,10 +62,10 @@ namespace Game{
 			int team_size = team_size_.load(std::memory_order_acquire);
 			if(num_ < team_size){
 				std::cout << (num_+1) << "/" << team_size << ", " << team_ << ": " << action_ << std::endl;
-				ball_.store(team_ == 1 ? 2 : 1);
+				ball_.store(team_ == 1 ? 2 : 1, std::memory_order_release);
 			}
 
-			striker_.store(num_+1 < team_size ? num_+1 : 0);
+			striker_.store(num_+1 < team_size ? num_+1 : 0, std::memory_order_release);
 
 			if(terminated_.test()){
 				return;
